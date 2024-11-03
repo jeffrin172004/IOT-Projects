@@ -1,0 +1,169 @@
+#include <SPI.h>
+#include <MFRC522.h>
+
+#define RST_PIN 9
+#define SS_PIN 10
+
+MFRC522 mfrc522(SS_PIN, RST_PIN);
+
+int latchPin = 7;
+int clockPin = 6;
+int dataPin = 8;
+
+void setup() {
+  Serial.begin(9600);
+
+  // Set up shift register pins as outputs
+  pinMode(latchPin, OUTPUT);
+  pinMode(clockPin, OUTPUT);
+  pinMode(dataPin, OUTPUT);
+
+  // RFID setup
+  SPI.begin();
+  mfrc522.PCD_Init();
+  Serial.println("Ready to read RFID cards!");
+}
+
+void loop() {
+  // 1st sequence
+  uint8_t seq1A = 0b00000010;
+  uint8_t seq1B = 0b01001100;
+  uint16_t seq1C = combineRegisters(seq1A, seq1B);
+  setTrafficSignal(seq1C);
+  delay(5000);
+  
+
+  if (mfrc522.PICC_IsNewCardPresent() && mfrc522.PICC_ReadCardSerial()) {
+    Serial.println("The ambulance is near the signal!");
+    uint8_t seq10A = 0b00000010;
+    uint8_t seq10B = 0b01001100;
+    uint16_t seq10C = combineRegisters(seq10A, seq10B);
+    setTrafficSignal(seq10C);
+    delay(5000);
+  }
+  
+
+  // 2nd sequence
+  uint8_t seq2A = 0b00000010;
+  uint8_t seq2B = 0b01011010;
+  uint16_t seq2C = combineRegisters(seq2A, seq2B);
+  setTrafficSignal(seq2C);
+  delay(2000);
+
+  if (mfrc522.PICC_IsNewCardPresent() && mfrc522.PICC_ReadCardSerial()) {
+    Serial.println("The ambulance is near the signal!");
+    uint8_t seq11A = 0b00000010;
+    uint8_t seq11B = 0b01001100;
+    uint16_t seq11C = combineRegisters(seq11A, seq11B);
+    setTrafficSignal(seq11C);
+    delay(5000);
+  }
+
+  // 3rd sequence
+  uint8_t seq3A = 0b00000010;
+  uint8_t seq3B = 0b01100001;
+  uint16_t seq3C = combineRegisters(seq3A, seq3B);
+  setTrafficSignal(seq3C);
+  delay(5000);
+
+  if (mfrc522.PICC_IsNewCardPresent() && mfrc522.PICC_ReadCardSerial()) {
+    Serial.println("The ambulance is near the signal!");
+    uint8_t seq12A = 0b00000010;
+    uint8_t seq12B = 0b01001100;
+    uint16_t seq12C = combineRegisters(seq12A, seq12B);
+    setTrafficSignal(seq12C);
+    delay(5000);
+  }
+
+  // 4th sequence
+  uint8_t seq4A = 0b00000010;
+  uint8_t seq4B = 0b11010001;
+  uint16_t seq4C = combineRegisters(seq4A, seq4B);
+  setTrafficSignal(seq4C);
+  delay(2000);
+
+  if (mfrc522.PICC_IsNewCardPresent() && mfrc522.PICC_ReadCardSerial()) {
+    Serial.println("The ambulance is near the signal!");
+    uint8_t seq13A = 0b00000010;
+    uint8_t seq13B = 0b01001100;
+    uint16_t seq13C = combineRegisters(seq13A, seq13B);
+    setTrafficSignal(seq13C);
+    delay(5000);
+  }
+
+  // 5th sequence
+  uint8_t seq5A = 0b00000011;
+  uint8_t seq5B = 0b00001001;
+  uint16_t seq5C = combineRegisters(seq5A, seq5B);
+  setTrafficSignal(seq5C);
+  delay(5000);
+
+  if (mfrc522.PICC_IsNewCardPresent() && mfrc522.PICC_ReadCardSerial()) {
+    Serial.println("The ambulance is near the signal!");
+    uint8_t seq14A = 0b00000010;
+    uint8_t seq14B = 0b01001100;
+    uint16_t seq14C = combineRegisters(seq14A, seq14B);
+    setTrafficSignal(seq14C);
+    delay(5000);
+  }
+
+  // 6th sequence
+  uint8_t seq6A = 0b00001010;
+  uint8_t seq6B = 0b10001001;
+  uint16_t seq6C = combineRegisters(seq6A, seq6B);
+  setTrafficSignal(seq6C);
+  delay(2000);
+
+  if (mfrc522.PICC_IsNewCardPresent() && mfrc522.PICC_ReadCardSerial()) {
+    Serial.println("The ambulance is near the signal!");
+    uint8_t seq15A = 0b00000010;
+    uint8_t seq15B = 0b01001100;
+    uint16_t seq15C = combineRegisters(seq15A, seq15B);
+    setTrafficSignal(seq15C);
+    delay(5000);
+  }
+
+  // 7th sequence
+  uint8_t seq7A = 0b00000100;
+  uint8_t seq7B = 0b01001001;
+  uint16_t seq7C = combineRegisters(seq7A, seq7B);
+  setTrafficSignal(seq7C);
+  delay(5000);
+
+  if (mfrc522.PICC_IsNewCardPresent() && mfrc522.PICC_ReadCardSerial()) {
+    Serial.println("The ambulance is near the signal!");
+    uint8_t seq16A = 0b00000010;
+    uint8_t seq16B = 0b01001100;
+    uint16_t seq16C = combineRegisters(seq16A, seq16B);
+    setTrafficSignal(seq16C);
+    delay(5000);
+  }
+
+  // 8th sequence
+  uint8_t seq8A = 0b00001000;
+  uint8_t seq8B = 0b01001011;
+  uint16_t seq8C = combineRegisters(seq8A, seq8B);
+  setTrafficSignal(seq8C);
+  delay(2000);
+
+  if (mfrc522.PICC_IsNewCardPresent() && mfrc522.PICC_ReadCardSerial()) {
+    Serial.println("The ambulance is near the signal!");
+    uint8_t seq19A = 0b00000010;
+    uint8_t seq19B = 0b01001100;
+    uint16_t seq19C = combineRegisters(seq19A, seq19B);
+    setTrafficSignal(seq19C);
+    delay(5000);
+  }
+}
+
+void setTrafficSignal(uint16_t state) {
+  digitalWrite(latchPin, LOW);
+  shiftOut(dataPin, clockPin, MSBFIRST, highByte(state));
+  shiftOut(dataPin, clockPin, MSBFIRST, lowByte(state));
+  digitalWrite(latchPin, HIGH);
+}
+
+// Function to combine two 8-bit registers into a 16-bit register
+uint16_t combineRegisters(uint8_t highByte, uint8_t lowByte) {
+  return (static_cast<uint16_t>(highByte) << 8) | lowByte;
+}
