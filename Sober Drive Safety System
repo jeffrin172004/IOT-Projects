@@ -1,0 +1,194 @@
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+#include <SoftwareSerial.h>
+#include <TinyGPS++.h>
+
+// Pin definitions
+const int motorPin1 = 6;
+const int motorPin11 = 7;
+const int motorPin2 = 8;
+const int motorPin21 = 9;
+const int alarmPin = 12;
+const int mq3Pin = A0;
+const int gsmRxPin = 10;
+const int gsmTxPin = 11;
+const int gpsRxPin = 10;   // GPS Module RX pin
+const int gpsTxPin = 11;   // GPS Module TX pin
+const int alcoholThreshold = 350;
+const String restartCommand = "RESTART";
+
+// Variables for sensor readings and motor state
+int mq3Reading = 0;
+bool vehicleStopped = false;
+
+// SoftwareSerial objects for GSM and GPS
+SoftwareSerial gsm(gsmRxPin, gsmTxPin);
+SoftwareSerial gpsSerial(gpsRxPin, gpsTxPin);
+TinyGPSPlus gps;
+
+// Create LCD object
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+
+void setup() {
+  Serial.begin(9600);
+  gsm.begin(9600);
+  gpsSerial.begin(9600);
+
+  lcd.begin(16, 2);
+  lcd.backlight();
+  lcd.setCursor(0, 0);
+  lcd.print("System Init...");
+
+  pinMode(motorPin1, OUTPUT);
+  pinMode(motorPin2, OUTPUT);
+  pinMode(motorPin11, OUTPUT);
+  pinMode(motorPin21, OUTPUT);
+  pinMode(alarmPin, OUTPUT);
+
+  digitalWrite(motorPin1, HIGH);
+  digitalWrite(motorPin11, LOW);
+  digitalWrite(motorPin2, HIGH);
+  digitalWrite(motorPin21, LOW);
+  digitalWrite(alarmPin, LOW);
+
+  sendATCommand("AT", 1000);
+  sendATCommand("AT+CPMS=\"SM\",\"SM\",\"SM\"", 1000);
+  sendATCommand("AT+CNMI=1,2,0,0,0", 1000);
+  sendATCommand("AT+CMGF=1", 1000);
+  sendATCommand("AT+CREG?", 1000);
+  sendATCommand("AT+CSQ", 1000);
+}
+
+void loop() {
+  mq3Reading = analogRead(mq3Pin);
+
+  // GPS Data Parsing
+  while (gpsSerial.available() > 0) {
+    gps.encode(gpsSerial.read());
+  }
+
+  if ((mq3Reading > alcoholThreshold) && (!vehicleStopped)) {
+    stopVehicle();
+    Serial.println("Alcohol detected! Vehicle stopped.");
+    lcd.clear();
+    lcd.print("Alcohol Detected!");
+    delay(2000);
+    lcd.setCursor(0, 1);
+    lcd.print("Vehicle Stopped");
+    delay(2000);
+
+    // Construct and send SMS with location
+    if (gps.location.isValid()) {
+      String locationLink = "https://maps.google.com/?q=";
+      locationLink += String(gps.location.lat(), 6);
+      locationLink += ",";
+      locationLink += String(gps.location.lng(), 6);
+      sendSMS("+917200098886", "Alcohol detected! Vehicle stopped. Location: " + locationLink);
+    } else {
+      sendSMS("+917200098886", "Alcohol detected! Vehicle stopped. Location: GPS signal unavailable.");
+    }
+  }
+
+  if (gsm.available() > 0) {
+    String incomingMessage = gsm.readStringUntil('\n');
+    incomingMessage.trim();
+
+    Serial.print("Received Message: '");
+    Serial.print(incomingMessage);
+    Serial.println("'");
+
+    lcd.clear();
+    lcd.print("Msg: ");
+    lcd.setCursor(0, 1);
+    lcd.print(incomingMessage);
+    delay(2000);
+
+    if (incomingMessage.equals(restartCommand) && vehicleStopped) {
+      restartVehicle();
+    }
+  } else {
+    Serial.println("No new SMS received.");
+    lcd.clear();
+    lcd.print("No SMS Received");
+    delay(2000);
+  }
+}
+
+// Function to stop the vehicle
+void stopVehicle() {
+  vehicleStopped = true;
+  digitalWrite(motorPin1, LOW);
+  digitalWrite(motorPin2, LOW);
+  digitalWrite(alarmPin, HIGH);
+
+  lcd.clear();
+  lcd.print("Vehicle Stopped");
+  delay(2000);
+}
+
+// Function to restart the vehicle
+void restartVehicle() {
+  vehicleStopped = false;
+  digitalWrite(motorPin1, HIGH);
+  digitalWrite(motorPin2, HIGH);
+  digitalWrite(alarmPin, LOW);
+
+  Serial.println("Vehicle restarted!");
+  lcd.clear();
+  lcd.print("Vehicle Restarted");
+  delay(2000);
+}
+
+// Function to send SMS
+void sendSMS(String phoneNumber, String message) {
+  gsm.print("AT+CMGS=\"");
+  gsm.print(phoneNumber);
+  gsm.println("\"");
+  delay(1000);
+
+  if (gsm.available()) {
+    String response = gsm.readString();
+    Serial.print("Response: ");
+    Serial.println(response);
+
+    lcd.clear();
+    lcd.print("Sending SMS...");
+    delay(2000);
+
+    if (response.indexOf('>') != -1) {
+      gsm.println(message);
+      delay(1000);
+      gsm.write(26);
+      delay(3000);
+      Serial.println("Message Sent!");
+
+      lcd.clear();
+      lcd.print("Message Sent!");
+      delay(2000);
+    } else {
+      Serial.println("Error: No prompt to send message.");
+      lcd.clear();
+      lcd.print("Error Sending SMS");
+      delay(2000);
+    }
+  } else {
+    Serial.println("Error: GSM module not responding.");
+    lcd.clear();
+    lcd.print("GSM Not Resp.");
+    delay(2000);
+  }
+}
+
+// Function to send AT commands and print the response
+void sendATCommand(String command, int delayTime) {
+  gsm.println(command);
+  delay(delayTime);
+  while (gsm.available()) {
+    Serial.write(gsm.read());
+  }
+  Serial.println();
+
+  lcd.clear();
+  lcd.print("Sending AT Cmd");
+  delay(1000);
+}
